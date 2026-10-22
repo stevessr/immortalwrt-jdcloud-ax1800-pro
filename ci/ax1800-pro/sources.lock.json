@@ -1,0 +1,61 @@
+{
+  "feeds": [
+    {
+      "name": "packages",
+      "url": "https://github.com/immortalwrt/packages.git",
+      "commit": "72c7391fb2d04080afd0bfe919605749f81eb747"
+    },
+    {
+      "name": "luci",
+      "url": "https://github.com/immortalwrt/luci.git",
+      "commit": "05c955f0aca2f5e8de1c126b0ec9e9e677e83b3f"
+    },
+    {
+      "name": "routing",
+      "url": "https://github.com/openwrt/routing.git",
+      "commit": "4b9891b9136259f93294a424507ed24c5e8c1cbd"
+    },
+    {
+      "name": "passwall_packages",
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git",
+      "commit": "049aaf472e8ce7e423299d43a516b7092a25b381"
+    },
+    {
+      "name": "passwall2",
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall2.git",
+      "commit": "896c586a27c9a7c0b9e3d75b631965dea86b9945"
+    },
+    {
+      "name": "nikki_rs",
+      "url": "https://github.com/CHKayanami/OpenWrt-nikki-rs.git",
+      "commit": "67ffca956c9678675b26dcc9a6237053a9fd8d93"
+    },
+    {
+      "name": "openclash",
+      "url": "https://github.com/vernesong/OpenClash.git",
+      "commit": "e553e82e01c697aefbe1555261a503f425e00ccd"
+    },
+    {
+      "name": "mentohust",
+      "url": "https://github.com/sbwml/luci-app-mentohust.git",
+      "commit": "3409d71e032844d4f28df2097d7ef1baf26bdb1c"
+    }
+  ],
+  "vendored": [
+    {
+      "name": "fastfetch",
+      "url": "https://github.com/ntbowen/fastfetch-openwrt.git",
+      "commit": "6dcd79f96ce4909e0c13040bc079c00610f9b002"
+    },
+    {
+      "name": "luci-app-kcpufreq",
+      "url": "https://github.com/kongfl888/luci-app-kcpufreq.git",
+      "commit": "8e8247ff38a0a9aae013c30bd2c10f8b31621739"
+    },
+    {
+      "name": "luci-app-iperf3",
+      "url": "https://github.com/Gevatter-Tod/luci-app-iperf3.git",
+      "commit": "6a1617fb70ba61805f13429c1e0f67eaab0afff6"
+    }
+  ]
+}

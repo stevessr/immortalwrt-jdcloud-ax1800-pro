@@ -1,0 +1,89 @@
+name: AX1800 Pro - official ImmortalWrt plus NSS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ax1800-pro-nss]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ax1800-pro-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'stevessr/immortalwrt-jdcloud-ax1800-pro'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      CCACHE_DIR: /home/runner/.cache/ccache-ax1800
+      CCACHE_MAXSIZE: 4G
+    steps:
+      - name: Checkout official fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Prepare standard hosted runner
+        run: |
+          set -euxo pipefail
+          # These paths belong only to the disposable GitHub hosted runner.
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang-18 llvm-18 llvm-18-dev \
+            libclang-18-dev libelf-dev libssl-dev libncurses-dev zlib1g-dev \
+            gawk gettext git rsync unzip zstd file wget curl python3 python3-setuptools \
+            flex bison swig pkgconf subversion time xsltproc gperf ccache \
+            device-tree-compiler u-boot-tools squashfs-tools
+          sudo mkdir -p /mnt/ax1800-work
+          sudo chown "$USER:$USER" /mnt/ax1800-work
+          mkdir -p logs
+          df -h
+          free -h
+      - name: Restore download and compiler caches
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            dl
+            /home/runner/.cache/ccache-ax1800
+          key: ax1800-downloads-${{ runner.os }}-${{ hashFiles('ci/ax1800-pro/sources.lock.json', 'ci/ax1800-pro/config.seed') }}-${{ github.sha }}
+          restore-keys: |
+            ax1800-downloads-${{ runner.os }}-${{ hashFiles('ci/ax1800-pro/sources.lock.json', 'ci/ax1800-pro/config.seed') }}-
+            ax1800-downloads-${{ runner.os }}-
+      - name: Prepare pinned feeds and assert configuration
+        run: bash ci/ax1800-pro/prepare.sh 2>&1 | tee logs/prepare.log
+      - name: Download verified sources
+        run: |
+          set -o pipefail
+          make download -j8 V=s 2>&1 | tee logs/download.log
+      - name: Compile firmware
+        run: |
+          set -o pipefail
+          jobs=$(nproc)
+          (( jobs <= 4 )) || jobs=4
+          make -j"$jobs" V=s 2>&1 | tee logs/build.log || \
+            make -j1 V=s 2>&1 | tee logs/build-retry.log
+      - name: Verify image, packages and actual BTF
+        run: |
+          python3 ci/ax1800-pro/verify-config.py
+          python3 ci/ax1800-pro/verify-image.py | tee logs/verification.log
+      - name: Upload firmware and evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ax1800-pro-${{ github.sha }}
+          path: bin/targets/qualcommax/ipq60xx/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - name: Upload build logs, including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: build-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            logs/
+            .config
+          include-hidden-files: true
+          retention-days: 14

@@ -1,0 +1,54 @@
+#!/bin/sh
+# No credentials belong in an image or public build artifact.
+. /lib/functions.sh
+[ "$(board_name)" = 'jdcloud,re-ss-01' ] || exit 0
+
+if [ -x /usr/bin/fish ]; then
+	sed -i '/^root:/s|:[^:]*$|:/usr/bin/fish|' /etc/passwd
+	grep -qxF /usr/bin/fish /etc/shells 2>/dev/null || echo /usr/bin/fish >> /etc/shells
+fi
+# Keep /bin/sh as ash: init, sysupgrade and package scripts require POSIX shell.
+uci set system.@system[0].hostname='sakura'
+uci set firewall.@defaults[0].flow_offloading='0'
+uci set firewall.@defaults[0].flow_offloading_hw='0'
+uci commit system
+uci commit firewall
+
+# Independent proxy stacks are installed, not simultaneously activated.
+for service in openclash nikki-rs passwall2 daed mentohust zerotier cloudflared kcpufreq sqm; do
+	[ ! -x "/etc/init.d/$service" ] || "/etc/init.d/$service" disable
+done
+uci -q set openclash.config.enable='0'
+uci -q set nikki-rs.config.enabled='0'
+uci -q set nikki-rs.config.boot_start='0'
+uci -q set passwall2.@global[0].enabled='0'
+uci -q set daed.config.enabled='0'
+for package in openclash nikki-rs passwall2 daed; do uci -q commit "$package"; done
+
+configure_ap() {
+	local section="$1" mode
+	config_get mode "$section" mode
+	[ "$mode" = ap ] || return 0
+	uci set "wireless.$section.ssid=sakura"
+	uci set "wireless.$section.encryption=sae"
+	uci set "wireless.$section.ieee80211w=2"
+	uci set "wireless.$section.sae_pwe=2"
+	uci set "wireless.$section.wps_pushbutton=0"
+	uci -q delete "wireless.$section.key"
+	uci set "wireless.$section.sae_password_file=/etc/sakura/sae-password"
+	# Empty/missing provisioning must never create an open AP.
+	uci set "wireless.$section.disabled=1"
+	[ ! -s /etc/sakura/sae-password ] || uci set "wireless.$section.disabled=0"
+}
+configure_radio() {
+	uci set "wireless.$1.disabled=1"
+	[ ! -s /etc/sakura/sae-password ] || uci set "wireless.$1.disabled=0"
+}
+if [ -f /etc/config/wireless ]; then
+	config_load wireless
+	config_foreach configure_ap wifi-iface
+	config_foreach configure_radio wifi-device
+	uci commit wireless
+fi
+[ ! -e /etc/sakura/sae-password ] || chmod 600 /etc/sakura/sae-password
+exit 0

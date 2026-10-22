@@ -1,8 +1,8 @@
-src-git packages https://github.com/immortalwrt/packages.git
-src-git luci https://github.com/immortalwrt/luci.git
-src-git routing https://github.com/openwrt/routing.git
-src-git telephony https://github.com/openwrt/telephony.git
-src-git video https://github.com/openwrt/video.git
-#src-git targets https://github.com/openwrt/targets.git
-#src-git oldpackages http://git.openwrt.org/packages.git
-#src-link custom /usr/src/openwrt/custom-feed
+src-git packages https://github.com/immortalwrt/packages.git^72c7391fb2d04080afd0bfe919605749f81eb747
+src-git luci https://github.com/immortalwrt/luci.git^05c955f0aca2f5e8de1c126b0ec9e9e677e83b3f
+src-git routing https://github.com/openwrt/routing.git^4b9891b9136259f93294a424507ed24c5e8c1cbd
+src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git^049aaf472e8ce7e423299d43a516b7092a25b381
+src-git passwall2 https://github.com/Openwrt-Passwall/openwrt-passwall2.git^896c586a27c9a7c0b9e3d75b631965dea86b9945
+src-git nikki_rs https://github.com/CHKayanami/OpenWrt-nikki-rs.git^67ffca956c9678675b26dcc9a6237053a9fd8d93
+src-git openclash https://github.com/vernesong/OpenClash.git^e553e82e01c697aefbe1555261a503f425e00ccd
+src-git mentohust https://github.com/sbwml/luci-app-mentohust.git^3409d71e032844d4f28df2097d7ef1baf26bdb1c

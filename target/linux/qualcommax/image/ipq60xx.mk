@@ -132,13 +132,17 @@ TARGET_DEVICES += jdcloud_re-cs-07
 
 define Device/jdcloud_re-ss-01
 	$(call Device/FitImage)
+	$(call Device/EmmcImage)
 	DEVICE_VENDOR := JDCloud
 	DEVICE_MODEL := RE-SS-01
 	SOC := ipq6000
 	BLOCKSIZE := 64k
-	KERNEL_SIZE := 6144k
+	KERNEL_SIZE := 16384k
 	DEVICE_DTS_CONFIG := config@cp03-c2
 	DEVICE_PACKAGES := ipq-wifi-jdcloud_re-ss-01 -ath11k-firmware-ipq6018 ath11k-firmware-ipq6018-ddwrt
+	SUPPORTED_DEVICES += jdcloud,ax1800-pro
+	IMAGES := sysupgrade.bin
+	KERNEL += | check-size $$(KERNEL_SIZE)
 endef
 TARGET_DEVICES += jdcloud_re-ss-01
 

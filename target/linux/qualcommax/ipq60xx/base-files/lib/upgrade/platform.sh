@@ -155,7 +155,20 @@ linksys_mr_pre_upgrade() {
 }
 
 platform_check_image() {
-	return 0;
+	[ "$(board_name)" = "jdcloud,re-ss-01" ] || return 0
+	local cfgpart rootpart kernpart slot rootsize kernsize
+	cfgpart="$(find_mmc_part "0:BOOTCONFIG")"
+	rootpart="$(find_mmc_part "rootfs")"
+	kernpart="$(find_mmc_part "0:HLOS")"
+	[ -b "$cfgpart" ] && [ -b "$rootpart" ] && [ -b "$kernpart" ] || return 1
+	slot="$(hexdump -s 148 -n 1 -e '1/1 "%u"' "$cfgpart")"
+	rootsize="$(cat /sys/class/block/"${rootpart##*/}"/size)"
+	kernsize="$(cat /sys/class/block/"${kernpart##*/}"/size)"
+	if [ "$slot" != 0 ] || [ "$rootsize" -lt 4194304 ] || [ "$kernsize" -lt 32768 ]; then
+		echo "This custom image requires primary slot 0, 2 GiB rootfs and 16 MiB HLOS; refusing upgrade."
+		return 1
+	fi
+	return 0
 }
 
 
