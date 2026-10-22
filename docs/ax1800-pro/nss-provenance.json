@@ -231,8 +231,6 @@
     "target/linux/qualcommax/config-6.18",
     "target/linux/qualcommax/dts/ipq6000-re-ss-01.dts",
     "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-common.dtsi",
-    "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-cp-cpu.dtsi",
-    "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-cpr-regulator.dtsi",
     "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-ess.dtsi",
     "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-nowifi.dtsi",
     "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-nss.dtsi",
@@ -247,10 +245,8 @@
     "target/linux/qualcommax/files/net/core/skbuff_recycle.h",
     "target/linux/qualcommax/files/net/netfilter/nf_conntrack_dscpremark_ext.c",
     "target/linux/qualcommax/ipq60xx/config-default",
-    "target/linux/qualcommax/patches-6.18/0101-arm64-dts-ipq6018-mp5496-fix-include-and-regulator.patch",
     "target/linux/qualcommax/patches-6.18/0103-arm64-dts-ipq6018-add-reserved-memory-nodes.patch",
     "target/linux/qualcommax/patches-6.18/0103-pwm-ipq-fix-period-calculation.patch",
-    "target/linux/qualcommax/patches-6.18/0131-arm64-dts-qcom-ipq6018-change-CPU-OPP-table.patch",
     "target/linux/qualcommax/patches-6.18/0143-arm64-dts-qcom-ipq6018-move-DR-mode-to-board-DTS.patch",
     "target/linux/qualcommax/patches-6.18/0144-arm64-dts-qcom-ipq6018-Flatten-usb-controller-nodes.patch",
     "target/linux/qualcommax/patches-6.18/0600-1-qca-nss-ecm-support-CORE.patch",
@@ -285,5 +281,11 @@
     "target/linux/qualcommax/patches-6.18/0135-arm64-dts-qcom-ipq6018-add-NSS-reserved-memory.patch",
     "target/linux/qualcommax/patches-6.18/0145-arm64-dts-qcom-ipq6018-add-uniphy-clocks-to-gcc.patch"
   ],
-  "scope": "JDCloud RE-SS-01 / AX1800 Pro, IPQ60xx, Linux 6.18; other device images are not validated"
+  "scope": "JDCloud RE-SS-01 / AX1800 Pro, IPQ60xx, Linux 6.18; other device images are not validated",
+  "excluded_cpu_tuning": [
+    "target/linux/qualcommax/patches-6.18/0131-arm64-dts-qcom-ipq6018-change-CPU-OPP-table.patch",
+    "target/linux/qualcommax/patches-6.18/0101-arm64-dts-ipq6018-mp5496-fix-include-and-regulator.patch",
+    "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-cp-cpu.dtsi",
+    "target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/ipq6018-cpr-regulator.dtsi"
+  ]
 }

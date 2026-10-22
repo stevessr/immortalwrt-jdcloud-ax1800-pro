@@ -14,7 +14,8 @@ The conflicting upstream SSDK definition and two replaced IPQ6018
 reserved-memory/clock patches are removed. Upstream mac80211 metadata
 scanning and unrelated ath12k changes are retained.
 
-Not imported: donor branding, feeds, general network defaults, unrelated
+Not imported: donor CPU OPP/speed-bin unlocks or CPR voltage tuning,
+branding, feeds, general network defaults, unrelated
 SoC targets, fullcone replacement, and mass changes to other board profiles.
 Existing official PPE source remains, but this IPQ60xx configuration uses
 NSS DP/SSDK instead. This branch validates ONLY `jdcloud_re-ss-01`; shared

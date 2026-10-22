@@ -14,8 +14,8 @@ endef
 define Build/Compile
 endef
 define Package/ax1800-pro-defaults/install
-	$(INSTALL_DIR) $(1)/etc/uci-defaults $(1)/etc/backup
+	$(INSTALL_DIR) $(1)/etc/uci-defaults $(1)/lib/upgrade/keep.d
 	$(INSTALL_BIN) ./files/99-zz-ax1800-pro $(1)/etc/uci-defaults/
-	$(INSTALL_DATA) ./files/keep $(1)/etc/backup/ax1800-pro
+	$(INSTALL_DATA) ./files/keep $(1)/lib/upgrade/keep.d/ax1800-pro
 endef
 $(eval $(call BuildPackage,ax1800-pro-defaults))

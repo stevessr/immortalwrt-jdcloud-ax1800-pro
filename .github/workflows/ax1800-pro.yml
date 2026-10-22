@@ -54,10 +54,37 @@ jobs:
             ax1800-downloads-${{ runner.os }}-
       - name: Prepare pinned feeds and assert configuration
         run: bash ci/ax1800-pro/prepare.sh 2>&1 | tee logs/prepare.log
+      - name: Test credential-free first-boot defaults
+        run: python3 ci/ax1800-pro/test-defaults.py
       - name: Download verified sources
         run: |
           set -o pipefail
           make download -j8 V=s 2>&1 | tee logs/download.log
+      - name: Restore host tools and cross compiler
+        id: toolchain-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            build_dir/host
+            build_dir/toolchain-*
+            staging_dir/host
+            staging_dir/toolchain-*
+          key: ax1800-toolchain-${{ runner.os }}-${{ hashFiles('tools/**', 'toolchain/**', 'include/**', 'ci/ax1800-pro/config.seed') }}
+      - name: Build host tools and cross compiler
+        run: |
+          set -o pipefail
+          make tools/install -j4 V=s 2>&1 | tee logs/tools.log
+          make toolchain/install -j4 V=s 2>&1 | tee logs/toolchain.log
+      - name: Cache completed cross compiler
+        if: steps.toolchain-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            build_dir/host
+            build_dir/toolchain-*
+            staging_dir/host
+            staging_dir/toolchain-*
+          key: ax1800-toolchain-${{ runner.os }}-${{ hashFiles('tools/**', 'toolchain/**', 'include/**', 'ci/ax1800-pro/config.seed') }}
       - name: Compile firmware
         run: |
           set -o pipefail
