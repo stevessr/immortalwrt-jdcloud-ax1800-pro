@@ -88,6 +88,10 @@ CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-netlink=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y
+# qca-nss-qdisc links against nss_igs_* exports; the core driver builds IGS
+# only when this package is selected (see DisableNssDrvFeatureWithoutPackages).
+CONFIG_NSS_DRV_IGS_ENABLE=y
+CONFIG_PACKAGE_kmod-qca-nss-drv-igs=y
 CONFIG_PACKAGE_kmod-fs-ext4=y
 CONFIG_PACKAGE_kmod-fs-f2fs=y
 CONFIG_PACKAGE_e2fsprogs=y

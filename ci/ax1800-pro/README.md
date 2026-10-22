@@ -66,6 +66,11 @@ patch uses `TARGET_CC_NOCACHE` for Cargo's linker: Cargo needs one executable,
 not the shell command `ccache aarch64-openwrt-linux-musl-gcc`. C compilation
 can still use ccache. Feed commits remain pinned and patch drift is rejected.
 
+`kmod-qca-nss-drv-qdisc` links against the core driver's `nss_igs_*` exports,
+so `kmod-qca-nss-drv-igs` and `NSS_DRV_IGS_ENABLE` stay enabled in
+`config.seed`; the driver package otherwise force-disables IGS when its
+package is absent and modpost would fail on undefined symbols.
+
 CI normalizes only tracked source mtimes, since OpenWrt preparation stamps hash
 mtimes. Compiler caches use exact content-based keys with no fallback. Generated
 files and outputs are not timestamp-normalized. The completed Rust installation

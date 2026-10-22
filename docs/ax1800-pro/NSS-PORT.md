@@ -32,6 +32,9 @@ simultaneously. No proxy subscriptions or credentials are included.
 
 - Explicitly disable the four retained official PPE Kconfig options when using
   NSS, so noninteractive kernel configuration has no unanswered prompts.
+- Select `kmod-qca-nss-drv-igs` with `NSS_DRV_IGS_ENABLE`: `qca-nss-qdisc`
+  calls the core driver's ingress-shaper exports unconditionally, while the
+  OpenWrt package boundary disables IGS unless its package is selected.
 - ECM patch 016 restores support for the official conntrack notifier-chain API
   (`CONFIG_NF_CONNTRACK_CHAIN_EVENTS`), while retaining the non-chain API. It
   also unregisters callbacks when acquiring a netns reference fails. A host
