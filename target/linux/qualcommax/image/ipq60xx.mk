@@ -138,7 +138,7 @@ define Device/jdcloud_re-ss-01
 	BLOCKSIZE := 64k
 	KERNEL_SIZE := 6144k
 	DEVICE_DTS_CONFIG := config@cp03-c2
-	DEVICE_PACKAGES := ipq-wifi-jdcloud_re-ss-01
+	DEVICE_PACKAGES := ipq-wifi-jdcloud_re-ss-01 -ath11k-firmware-ipq6018 ath11k-firmware-ipq6018-ddwrt
 endef
 TARGET_DEVICES += jdcloud_re-ss-01
 
