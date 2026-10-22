@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 360
     env:
       CCACHE_DIR: /home/runner/.cache/ccache-ax1800
-      CCACHE_MAXSIZE: 4G
+      CCACHE_MAXSIZE: 2G
     steps:
       - name: Checkout official fork
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -43,23 +43,35 @@ jobs:
           df -h
           free -h
       - name: Restore download and compiler caches
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: source-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             dl
             /home/runner/.cache/ccache-ax1800
-          key: ax1800-downloads-${{ runner.os }}-${{ hashFiles('ci/ax1800-pro/sources.lock.json', 'ci/ax1800-pro/config.seed') }}-${{ github.sha }}
+          key: ax1800-downloads-${{ runner.os }}-${{ hashFiles('ci/ax1800-pro/sources.lock.json', 'ci/ax1800-pro/config.seed') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ax1800-downloads-${{ runner.os }}-${{ hashFiles('ci/ax1800-pro/sources.lock.json', 'ci/ax1800-pro/config.seed') }}-
             ax1800-downloads-${{ runner.os }}-
       - name: Prepare pinned feeds and assert configuration
         run: bash ci/ax1800-pro/prepare.sh 2>&1 | tee logs/prepare.log
       - name: Test credential-free first-boot defaults
-        run: python3 ci/ax1800-pro/test-defaults.py
+        run: |
+          python3 ci/ax1800-pro/test-defaults.py
+          python3 ci/ax1800-pro/test-ci-mtimes.py
       - name: Download verified sources
         run: |
           set -o pipefail
           make download -j8 V=s 2>&1 | tee logs/download.log
+      - name: Test patched ECM notifier API and lifetime handling
+        run: python3 ci/ax1800-pro/test-ecm-notifier.py
+      - name: Normalize immutable checkout timestamps
+        run: python3 ci/ax1800-pro/normalize-ci-mtimes.py
+      - name: Compute exact compiler cache identities
+        id: cache-keys
+        run: |
+          echo 'toolchain=ax1800-toolchain-v2-ubuntu24-${{ hashFiles('tools/**', 'toolchain/**', 'include/**', 'config/**', 'scripts/**', 'target/linux/generic/**', 'target/linux/qualcommax/**', 'Config.in', 'rules.mk', 'ci/ax1800-pro/config.seed', 'ci/ax1800-pro/normalize-ci-mtimes.py') }}' >> "$GITHUB_OUTPUT"
+          echo 'rust=${{ hashFiles('feeds/packages/lang/rust/**') }}' >> "$GITHUB_OUTPUT"
       - name: Restore host tools and cross compiler
         id: toolchain-cache
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
@@ -69,7 +81,7 @@ jobs:
             build_dir/toolchain-*
             staging_dir/host
             staging_dir/toolchain-*
-          key: ax1800-toolchain-${{ runner.os }}-${{ hashFiles('tools/**', 'toolchain/**', 'include/**', 'ci/ax1800-pro/config.seed') }}
+          key: ${{ steps.cache-keys.outputs.toolchain }}
       - name: Build host tools and cross compiler
         run: |
           set -o pipefail
@@ -84,7 +96,20 @@ jobs:
             build_dir/toolchain-*
             staging_dir/host
             staging_dir/toolchain-*
-          key: ax1800-toolchain-${{ runner.os }}-${{ hashFiles('tools/**', 'toolchain/**', 'include/**', 'ci/ax1800-pro/config.seed') }}
+          key: ${{ steps.cache-keys.outputs.toolchain }}
+      - name: Restore completed Rust compiler
+        id: rust-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          # Installed compiler plus completed stamps, not its multi-GB object tree.
+          # The exact key covers toolchain, target, configuration and Rust recipe.
+          path: |
+            staging_dir/target-*/host
+            staging_dir/hostpkg/stamp/.rust_installed
+            build_dir/target-*/host/rustc-*/.prepared*
+            build_dir/target-*/host/rustc-*/.configured*
+            build_dir/target-*/host/rustc-*/.built*
+          key: ${{ steps.cache-keys.outputs.toolchain }}-rust-v1-${{ steps.cache-keys.outputs.rust }}
       - name: Compile firmware
         run: |
           set -o pipefail
@@ -92,6 +117,37 @@ jobs:
           (( jobs <= 4 )) || jobs=4
           make -j"$jobs" V=s 2>&1 | tee logs/build.log || \
             make -j1 V=s 2>&1 | tee logs/build-retry.log
+      - name: Check whether Rust completed, even if another package failed
+        if: always() && !cancelled()
+        id: rust-state
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          compilers=(staging_dir/target-*/host/bin/rustc)
+          if [[ -f staging_dir/hostpkg/stamp/.rust_installed && ${#compilers[@]} == 1 ]]; then
+            "${compilers[0]}" --version
+            echo 'complete=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Cache completed Rust compiler
+        if: always() && steps.rust-state.outputs.complete == 'true' && steps.rust-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            staging_dir/target-*/host
+            staging_dir/hostpkg/stamp/.rust_installed
+            build_dir/target-*/host/rustc-*/.prepared*
+            build_dir/target-*/host/rustc-*/.configured*
+            build_dir/target-*/host/rustc-*/.built*
+          key: ${{ steps.cache-keys.outputs.toolchain }}-rust-v1-${{ steps.cache-keys.outputs.rust }}
+      - name: Save downloads and ccache even on package failure
+        if: always() && !cancelled() && steps.source-cache.outcome == 'success'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: |
+            dl
+            /home/runner/.cache/ccache-ax1800
+          key: ${{ steps.source-cache.outputs.cache-primary-key }}
       - name: Verify image, packages and actual BTF
         run: |
           python3 ci/ax1800-pro/verify-config.py

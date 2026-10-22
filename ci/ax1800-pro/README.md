@@ -58,3 +58,16 @@ is not equivalent to enabling all of them safely at once.
 Additional recipe adaptations: iperf3's LuCI build include and duplicate
 BuildPackage were corrected; kcpufreq declares its LuCI host tool and legacy
 runtime dependencies. Original licenses/authors are retained.
+
+# Build integration notes
+
+Pinned feeds receive only the tracked patches under `feed-patches/`. The fish
+patch uses `TARGET_CC_NOCACHE` for Cargo's linker: Cargo needs one executable,
+not the shell command `ccache aarch64-openwrt-linux-musl-gcc`. C compilation
+can still use ccache. Feed commits remain pinned and patch drift is rejected.
+
+CI normalizes only tracked source mtimes, since OpenWrt preparation stamps hash
+mtimes. Compiler caches use exact content-based keys with no fallback. Generated
+files and outputs are not timestamp-normalized. The completed Rust installation
+and its build stamps are cached independently of firmware success; downloads and
+ccache are saved on package failures too. A cache is never image/boot validation.

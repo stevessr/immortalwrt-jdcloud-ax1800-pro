@@ -27,3 +27,14 @@ Imported code is not proof of a successful build or of runtime offload.
 NSS fast paths can bypass TC/eBPF/transparent proxy/SQM processing. Those
 services must be configured and verified deliberately, not all enabled
 simultaneously. No proxy subscriptions or credentials are included.
+
+## Integration fixes on top of the donor
+
+- Explicitly disable the four retained official PPE Kconfig options when using
+  NSS, so noninteractive kernel configuration has no unanswered prompts.
+- ECM patch 016 restores support for the official conntrack notifier-chain API
+  (`CONFIG_NF_CONNTRACK_CHAIN_EVENTS`), while retaining the non-chain API. It
+  also unregisters callbacks when acquiring a netns reference fails. A host
+  test compiles the actual patched callbacks against both API signatures and
+  exercises dispatch, registration failure and reference cleanup. This keeps
+  the official fullcone implementation rather than removing it to fit ECM.

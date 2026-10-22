@@ -9,6 +9,16 @@ expected = ''.join(f"src-git {f['name']} {f['url']}^{f['commit']}\n" for f in lo
 assert Path('feeds.conf.default').read_text() == expected, 'Feed pins differ from lock'
 PY
 ./scripts/feeds update -a
+for patch in ci/ax1800-pro/feed-patches/*/*.patch; do
+    feed=$(basename "$(dirname "$patch")")
+    patch=$(realpath "$patch")
+    if git -C "feeds/$feed" apply --check "$patch"; then
+        git -C "feeds/$feed" apply "$patch"
+    else
+        # Re-running preparation is safe, but unexpected drift must fail closed.
+        git -C "feeds/$feed" apply --reverse --check "$patch"
+    fi
+done
 ./scripts/feeds uninstall -a
 # Install the image's dependency closure, not thousands of unrelated feed menus.
 ./scripts/feeds install -f -p passwall_packages \

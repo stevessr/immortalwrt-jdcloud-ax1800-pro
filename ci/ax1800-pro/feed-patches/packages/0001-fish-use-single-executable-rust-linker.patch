@@ -1,0 +1,20 @@
+--- a/utils/fish/Makefile
++++ b/utils/fish/Makefile
+@@ -6,7 +6,7 @@
+ 
+ PKG_NAME:=fish
+ PKG_VERSION:=4.7.1
+-PKG_RELEASE:=2
++PKG_RELEASE:=3
+ 
+ PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+ PKG_SOURCE_URL:=https://github.com/fish-shell/fish-shell/releases/download/$(PKG_VERSION)
+@@ -30,7 +30,7 @@
+ # For pcre2-sys
+ export CC=$(TARGET_CC)
+ export RUSTFLAGS+=-C target-feature=-crt-static
+-export CARGO_TARGET_$(shell echo $(RUSTC_TARGET_ARCH) | sed -e 'y/abcdefghijklmnopqrstuvwxyz-/ABCDEFGHIJKLMNOPQRSTUVWXYZ_/')_LINKER:=$(TARGET_CC)
++export CARGO_TARGET_$(shell echo $(RUSTC_TARGET_ARCH) | sed -e 'y/abcdefghijklmnopqrstuvwxyz-/ABCDEFGHIJKLMNOPQRSTUVWXYZ_/')_LINKER:=$(TARGET_CC_NOCACHE)
+ 
+ define Package/fish
+   SECTION:=utils

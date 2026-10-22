@@ -1,0 +1,92 @@
+--- a/ecm_conntrack_notifier.c
++++ b/ecm_conntrack_notifier.c
+@@ -332,8 +332,14 @@
+  * ecm_conntrack_event()
+  *	Callback event invoked when conntrack connection state changes, currently we handle destroy events to quickly release state
+  */
++#ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
++static int ecm_conntrack_event(struct notifier_block *this, unsigned long events, void *ptr)
++{
++	const struct nf_ct_event *item = ptr;
++#else
+ static int ecm_conntrack_event(unsigned int events, const struct nf_ct_event *item)
+ {
++#endif
+ 	struct nf_conn *ct = item->ct;
+ 
+ 	/*
+@@ -384,9 +390,24 @@
+  * struct nf_ct_event_notifier ecm_conntrack_notifier
+  *	Netfilter conntrack event system to monitor connection tracking changes
+  */
++#ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
++static struct notifier_block ecm_conntrack_notifier = {
++	.notifier_call = ecm_conntrack_event,
++};
++#else
+ static struct nf_ct_event_notifier ecm_conntrack_notifier = {
+-    .ct_event	= ecm_conntrack_event,
++	.ct_event = ecm_conntrack_event,
+ };
++#endif
++
++static void ecm_conntrack_unregister(void)
++{
++#ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
++	nf_conntrack_unregister_notifier(&init_net, &ecm_conntrack_notifier);
++#else
++	nf_conntrack_unregister_notifier(&init_net);
++#endif
++}
+ #endif
+ 
+ /*
+@@ -423,7 +444,16 @@
+ 	/*
+ 	 * Eventing subsystem is available so we register a notifier hook to get fast notifications of expired connections
+ 	 */
++#ifdef CONFIG_NF_CONNTRACK_CHAIN_EVENTS
++	result = nf_conntrack_register_notifier(&init_net, &ecm_conntrack_notifier);
++	if (result < 0) {
++		DEBUG_ERROR("Can't register nf notifier hook.\n");
++		debugfs_remove_recursive(ecm_conntrack_notifier_dentry);
++		return result;
++	}
++#else
+ 	nf_conntrack_register_notifier(&init_net, &ecm_conntrack_notifier);
++#endif
+ 
+ 	/*
+ 	 * Hold netns reference to keep the basic conntrack alive and
+@@ -432,6 +462,7 @@
+ 	result = nf_ct_netns_get(&init_net, NFPROTO_IPV4);
+ 	if (result < 0) {
+ 		DEBUG_ERROR("Can't hold ipv4 netns.\n");
++		ecm_conntrack_unregister();
+ 		debugfs_remove_recursive(ecm_conntrack_notifier_dentry);
+ 		return result;
+ 	}
+@@ -439,6 +470,7 @@
+ 	result = nf_ct_netns_get(&init_net, NFPROTO_IPV6);
+ 	if (result < 0) {
+ 		DEBUG_ERROR("Can't hold ipv6 netns.\n");
++		ecm_conntrack_unregister();
+ 		nf_ct_netns_put(&init_net, NFPROTO_IPV4);
+ 		debugfs_remove_recursive(ecm_conntrack_notifier_dentry);
+ 		return result;
+@@ -458,6 +490,7 @@
+ 	DEBUG_INFO("ECM Conntrack Notifier exit\n");
+ 
+ #ifdef CONFIG_NF_CONNTRACK_EVENTS
++	ecm_conntrack_unregister();
+ 	/*
+ 	 * Release netns reference.
+ 	 */
+@@ -465,7 +498,6 @@
+ #ifdef ECM_IPV6_ENABLE
+ 	nf_ct_netns_put(&init_net, NFPROTO_IPV6);
+ #endif
+-	nf_conntrack_unregister_notifier(&init_net);
+ #endif
+ 	/*
+ 	 * Remove the debugfs files recursively.
