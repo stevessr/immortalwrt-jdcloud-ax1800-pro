@@ -10,7 +10,7 @@ when omitted.
 
 --- a/nikki-rs/files/nikki-rs.init
 +++ b/nikki-rs/files/nikki-rs.init
-@@ -120,6 +120,9 @@ mixin_profile() (
+@@ -120,5 +120,8 @@ mixin_profile() (
  		fi
  	fi
 +	# clash-rs v0.20.0-alpha requires skip-cert-verify for Hysteria2.
