@@ -54,6 +54,15 @@ required = requested & available
 assert not (required - installed), 'Missing packages: ' + repr(sorted(required - installed))
 assert not (installed & {'firewall', 'iptables-zz-legacy', 'dnsmasq'}), installed
 result['verified_packages'] = sorted(required)
+assert {'mentohust', 'luci-app-mentohust'} <= installed, installed
+package_dir = Path('bin/packages')
+mentohust_apks = {
+    name: sorted(str(path.relative_to(package_dir))
+                 for path in package_dir.rglob(f'{name}-*.apk'))
+    for name in ('mentohust', 'luci-app-mentohust')
+}
+assert all(mentohust_apks.values()), 'Missing MentoHUST APKs: ' + repr(mentohust_apks)
+result['mentohust_apks'] = mentohust_apks
 
 kernels = list(Path('build_dir').glob('target-*/linux-qualcommax_ipq60xx/linux-6.18.*/.config'))
 assert len(kernels) == 1, kernels
@@ -74,8 +83,10 @@ shutil.copyfile('ci/ax1800-pro/sources.lock.json', evidence / 'sources.lock.json
 shutil.copyfile('docs/ax1800-pro/nss-provenance.json', evidence / 'nss-provenance.json')
 roots = list(Path('build_dir').glob('target-*/root-qualcommax'))
 assert len(roots) == 1, roots
-for name in ['usr/bin/fish', 'etc/openclash/core/clash_meta', 'usr/bin/clash-rs', 'usr/bin/fastfetch']:
-    assert (roots[0] / name).is_file(), 'Missing binary: ' + name
+for name in ['usr/bin/fish', 'etc/openclash/core/clash_meta', 'usr/bin/clash-rs',
+             'usr/bin/fastfetch', 'bin/ubus', 'sbin/ubusd',
+             'usr/share/gwrt/theme-version', 'etc/uci-defaults/31_luci-theme-gwrt']:
+    assert (roots[0] / name).is_file(), 'Missing firmware file: ' + name
 assert not (roots[0] / 'etc/sakura/sae-password').exists(), 'Credentials must not be baked into public images'
 (evidence / 'verification.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result, indent=2))

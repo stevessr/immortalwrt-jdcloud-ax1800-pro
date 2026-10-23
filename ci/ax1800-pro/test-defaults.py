@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Execute first-boot defaults only inside a temporary, stubbed filesystem."""
+import json
 from pathlib import Path
 import os
 import subprocess
@@ -35,7 +36,8 @@ config_foreach() {
         test = test.replace('/usr/bin/fish', str(root / 'usr/bin/fish'))
         script = root / 'test.sh'
         script.write_text(test)
-        env = dict(os.environ, PATH=str(root / 'bin') + ':' + os.environ['PATH'], UCI_LOG=str(root / 'uci.log'))
+        env = dict(os.environ, PATH=str(root / 'bin') + ':' + os.environ['PATH'],
+                   UCI_LOG=str(root / 'uci.log'))
         subprocess.run(['sh', str(script)], env=env, check=True)
         log = (root / 'uci.log').read_text()
         for iface in ('default_radio0', 'default_radio1'):

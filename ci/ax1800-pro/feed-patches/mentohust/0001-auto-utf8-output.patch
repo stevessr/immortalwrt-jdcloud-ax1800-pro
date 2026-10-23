@@ -1,0 +1,194 @@
+diff --git a/mentohust/src/mentohust.c b/mentohust/src/mentohust.c
+index b692597..50d4a4d 100644
+--- a/mentohust/src/mentohust.c
++++ b/mentohust/src/mentohust.c
+@@ -190,33 +190,15 @@ static void pcap_handle(u_char *user, const struct pcap_pkthdr *h, const u_char
+ #endif
+ }
+ 
+-#ifndef MAC_OS
+-static char *gbk2utf(char *gbksrc, size_t gbklen)	/* GBK转UTF－8 */
+-#else
+-static char *gbk2utf(const char *gbksrc, size_t gbklen)	/* GBK转UTF－8 */
+-#endif
++static char *serverTextToUtf8(const char *text, unsigned int length)
+ {
++	char *result = NULL;
++	unsigned int result_len = 0;
+ 
+-	/* GBK一汉字俩字节，UTF-8一汉字3字节，二者ASCII字符均一字节
+-		 所以这样申请是足够的了，要记得释放 */
+-	str_normalize_init();
+-
+-	size_t utf8len = gbklen * 3 + 1;
+-	char *utf8dst = (char *)malloc(utf8len);
+-
+-	memset(utf8dst,0,utf8len);
+-	
+-	char *temp=(char *)malloc(gbklen+5);
+-	memset(temp, 0, gbklen+5);
+-	memcpy(temp,gbksrc,gbklen);
+-	gbksrc = temp;
+-	gbklen = strlen(gbksrc);
+-
+-	gbk_to_utf8(gbksrc, gbklen, &utf8dst, &utf8len);
+-
+-	free(temp);
++	if (text_to_utf8(text, length, &result, &result_len) != 0)
++		return NULL;
+ 
+-	return utf8dst;
++	return result;
+ }
+ 
+ static void showRuijieMsg(const u_char *buf, unsigned bufLen)
+@@ -228,7 +210,7 @@ static void showRuijieMsg(const u_char *buf, unsigned bufLen)
+ 		for (serverMsg=(char *)(buf+0x1c); *serverMsg=='\r'||*serverMsg=='\n'; serverMsg++,length--);	/* 跳过开头的换行符 */
+ 		if (strlen(serverMsg) < length)
+ 			length = strlen(serverMsg);
+-		if (length>0 && (serverMsg=gbk2utf(serverMsg, length))!=NULL)
++		if (length>0 && (serverMsg=serverTextToUtf8(serverMsg, (unsigned int)length))!=NULL)
+ 		{
+ 			printf("$$ 系统提示:\t%s\n", serverMsg);
+ #ifndef NO_NOTIFY
+@@ -246,7 +228,7 @@ static void showRuijieMsg(const u_char *buf, unsigned bufLen)
+ 		else
+ 			length = buf[length-1]-2;
+ 		for (; *serverMsg=='\r'||*serverMsg=='\n'; serverMsg++,length--);
+-		if (length>0 && (serverMsg=gbk2utf(serverMsg, length))!=NULL)
++		if (length>0 && (serverMsg=serverTextToUtf8(serverMsg, (unsigned int)length))!=NULL)
+ 		{
+ 			printf("$$ 计费提示:\t%s\n", serverMsg);
+ #ifndef NO_NOTIFY
+@@ -265,7 +247,7 @@ static void showCernetMsg(const u_char *buf)
+ 	int length = ntohs(*(u_int16_t *)(buf+0x14)) - 5;
+ 	if (strlen(serverMsg) < length)
+ 		length = strlen(serverMsg);
+-	if (length>0 && (serverMsg=gbk2utf(serverMsg, length))!=NULL)
++	if (length>0 && (serverMsg=serverTextToUtf8(serverMsg, (unsigned int)length))!=NULL)
+ 	{
+ 		printf("$$ 系统提示:\t%s\n", serverMsg);
+ #ifndef NO_NOTIFY
+diff --git a/mentohust/src/strnormalize.c b/mentohust/src/strnormalize.c
+index c8eb7d3..f3faa44 100644
+--- a/mentohust/src/strnormalize.c
++++ b/mentohust/src/strnormalize.c
+@@ -1,5 +1,7 @@
+ #include "strnormalize.h"
+ #include <stdlib.h>
++#include <limits.h>
++#include <string.h>
+ 
+ #define SWAPBYTE(x) (((unsigned short)(x) >> 8) | (unsigned short)(x) << 8)
+ #define COMPBYTE(x, y) ((unsigned char)(x) << 8 | (unsigned char)(y))
+@@ -16704,5 +16706,98 @@ int utf8_to_gbk(const char *from, unsigned int from_len, char **to, unsigned int *to_len)
+ 	return 0;
+ }
+ 
++static int utf8_is_valid(const unsigned char *text, unsigned int length)
++{
++	unsigned int i = 0;
++
++	while (i < length) {
++		unsigned char c = text[i];
++		unsigned char next;
++
++		if (c < 0x80) {
++			i++;
++			continue;
++		}
++
++		if (c >= 0xc2 && c <= 0xdf) {
++			if (length - i < 2 || (text[i + 1] & 0xc0) != 0x80)
++				return 0;
++			i += 2;
++		} else if (c >= 0xe0 && c <= 0xef) {
++			if (length - i < 3)
++				return 0;
++			next = text[i + 1];
++			if ((next & 0xc0) != 0x80 || (text[i + 2] & 0xc0) != 0x80 ||
++			    (c == 0xe0 && next < 0xa0) || (c == 0xed && next >= 0xa0))
++				return 0;
++			i += 3;
++		} else if (c >= 0xf0 && c <= 0xf4) {
++			if (length - i < 4)
++				return 0;
++			next = text[i + 1];
++			if ((next & 0xc0) != 0x80 || (text[i + 2] & 0xc0) != 0x80 ||
++			    (text[i + 3] & 0xc0) != 0x80 ||
++			    (c == 0xf0 && next < 0x90) || (c == 0xf4 && next > 0x8f))
++				return 0;
++			i += 4;
++		} else {
++			return 0;
++		}
++	}
++
++	return 1;
++}
++
++int text_to_utf8(const char *from, unsigned int from_len, char **to,
++		 unsigned int *to_len)
++{
++	static int tables_initialized;
++	char *result;
++	unsigned int result_len;
++
++	if (from == NULL || from_len == 0 || to == NULL || to_len == NULL)
++		return -1;
++
++	*to = NULL;
++	*to_len = 0;
++
++	if (utf8_is_valid((const unsigned char *)from, from_len)) {
++		if (from_len == UINT_MAX)
++			return -1;
++
++		result = malloc((size_t)from_len + 1);
++		if (result == NULL)
++			return -1;
++
++		memcpy(result, from, from_len);
++		result[from_len] = '\0';
++		*to = result;
++		*to_len = from_len;
++		return 0;
++	}
++
++	if (from_len > (UINT_MAX - 1U) / 3U)
++		return -1;
++
++	result = malloc((size_t)from_len * 3U + 1U);
++	if (result == NULL)
++		return -1;
++
++	if (!tables_initialized) {
++		str_normalize_init();
++		tables_initialized = 1;
++	}
++
++	result_len = from_len * 3U + 1U;
++	if (gbk_to_utf8(from, from_len, &result, &result_len) != 0) {
++		free(result);
++		return -1;
++	}
++
++	*to = result;
++	*to_len = result_len;
++	return 0;
++}
++
+ // vim: foldmethod=marker
+ 
+diff --git a/mentohust/src/strnormalize.h b/mentohust/src/strnormalize.h
+index cdbeb10..0997c86 100644
+--- a/mentohust/src/strnormalize.h
++++ b/mentohust/src/strnormalize.h
+@@ -26,6 +26,7 @@ void str_normalize_gbk(char *text, unsigned options);
+ void str_normalize_utf8(char *text, unsigned options);
+ 
+ int gbk_to_utf8(const char *from, unsigned int from_len, char **to, unsigned int *to_len);
++int text_to_utf8(const char *from, unsigned int from_len, char **to, unsigned int *to_len);
+ int utf8_to_gbk(const char *from, unsigned int from_len, char **to, unsigned int *to_len);
+ 
+ #ifdef __cplusplus

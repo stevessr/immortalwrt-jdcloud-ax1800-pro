@@ -26,8 +26,9 @@ done
 ./scripts/feeds install \
     luci luci-ssl-openssl luci-compat luci-app-mentohust luci-app-openclash \
     luci-app-nikki-rs luci-app-passwall2 daed luci-app-daed daed-geoip daed-geosite \
-    zerotier luci-app-zerotier cloudflared luci-app-ttyd mmc-utils \
-    luci-app-statistics luci-app-sqm fish e2fsprogs f2fs-tools \
+    zerotier luci-app-zerotier cloudflared luci-app-cloudflared \
+    luci-app-filemanager luci-theme-gwrt luci-app-ttyd mmc-utils \
+    luci-app-statistics luci-app-sqm fish bottom btop e2fsprogs f2fs-tools \
     automount cpufreq libpci libcap libudev-zero iperf3 luci-base
 python3 - <<'PY'
 import json, subprocess

@@ -39,11 +39,13 @@ Root's login shell is fish. `/bin/sh` stays ash for system scripts. Use
 
 OpenClash includes the hash-verified official Mihomo arm64 core; Nikki-RS
 includes its pinned clash-rs package. Passwall2 uses nftables, not legacy
-iptables. Proxy applications, MentoHUST, ZeroTier, cloudflared and SQM are
-installed but not automatically enabled or supplied with accounts/tunnels.
-`daed` is included as requested; its upstream was archived in September 2026.
-The older kcpufreq UI is included with LuCI compatibility and left disabled;
-no unsupported CPU frequency is forced.
+iptables. Proxy applications, MentoHUST, ZeroTier, cloudflared, SQM, `bottom` and
+`btop` are installed but not automatically enabled or supplied with accounts/tunnels.
+GWRT is the default LuCI theme selected in Actions; `ubus`/`ubusd`, the
+Cloudflared LuCI app and LuCI File Manager are included. `daed` is included as
+requested; its upstream was archived in September 2026. The older kcpufreq UI
+is included with LuCI compatibility and left disabled; no unsupported CPU
+frequency is forced.
 
 ## NSS versus traffic inspection
 
@@ -66,6 +68,14 @@ Pinned feeds receive only the tracked patches under `feed-patches/`. The fish
 patch uses `TARGET_CC_NOCACHE` for Cargo's linker: Cargo needs one executable,
 not the shell command `ccache aarch64-openwrt-linux-musl-gcc`. C compilation
 can still use ccache. Feed commits remain pinned and patch drift is rejected.
+The Actions seed explicitly selects `CONFIG_USE_APK=y`; MentoHUST core and
+LuCI packages are built by this APK-enabled buildroot and their `.apk`
+artifacts are verified. GWRT is pinned at
+`c141330a519fc4bc342f484f6d938b03ec52d6c7`; Actions installs only
+`luci-theme-gwrt` from that feed, not the upstream configuration fragment.
+Valid UTF-8 MentoHUST server messages pass through; other server text is
+converted from GBK to UTF-8 before printing and notification.
+
 
 `kmod-qca-nss-drv-qdisc` links against the core driver's `nss_igs_*` exports,
 so `kmod-qca-nss-drv-igs` and `NSS_DRV_IGS_ENABLE` stay enabled in

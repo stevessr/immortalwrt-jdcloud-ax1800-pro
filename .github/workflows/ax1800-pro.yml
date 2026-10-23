@@ -55,10 +55,15 @@ jobs:
             ax1800-downloads-${{ runner.os }}-
       - name: Prepare pinned feeds and assert configuration
         run: bash ci/ax1800-pro/prepare.sh 2>&1 | tee logs/prepare.log
-      - name: Test credential-free first-boot defaults
+      - name: Test first-boot defaults and MentoHUST encoding
         run: |
           python3 ci/ax1800-pro/test-defaults.py
           python3 ci/ax1800-pro/test-ci-mtimes.py
+          cc -std=gnu99 -Ifeeds/mentohust/mentohust/src \
+            ci/ax1800-pro/test-mentohust-encoding.c \
+            feeds/mentohust/mentohust/src/strnormalize.c \
+            -o /tmp/test-mentohust-encoding
+          /tmp/test-mentohust-encoding
       - name: Download verified sources
         run: |
           set -o pipefail

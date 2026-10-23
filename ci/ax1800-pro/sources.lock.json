@@ -11,6 +11,11 @@
       "commit": "05c955f0aca2f5e8de1c126b0ec9e9e677e83b3f"
     },
     {
+      "name": "gwrt_theme",
+      "url": "https://github.com/rothdren-lion/gwrt-theme.git",
+      "commit": "c141330a519fc4bc342f484f6d938b03ec52d6c7"
+    },
+    {
       "name": "routing",
       "url": "https://github.com/openwrt/routing.git",
       "commit": "4b9891b9136259f93294a424507ed24c5e8c1cbd"
