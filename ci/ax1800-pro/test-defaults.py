@@ -10,7 +10,7 @@ source = Path('package/custom/ax1800-pro-defaults/files/99-zz-ax1800-pro').read_
 for legacy_sae_file in (False, True):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        for d in ('etc/config', 'etc/sakura', 'usr/bin', 'lib', 'bin'):
+        for d in ('etc/config', 'etc/sakura', 'etc/init.d', 'usr/bin', 'lib', 'bin'):
             (root / d).mkdir(parents=True, exist_ok=True)
         (root / 'etc/config/wireless').touch()
         (root / 'etc/passwd').write_text('root:x:0:0:root:/root:/bin/ash\n')
@@ -30,6 +30,11 @@ config_foreach() {
         (root / 'bin/uci').chmod(0o755)
         if legacy_sae_file:
             (root / 'etc/sakura/sae-password').write_text('legacy-password\n')
+        for service in ('openclash', 'nikki-rs', 'passwall2', 'daed', 'mentohust',
+                        'zerotier', 'cloudflared', 'kcpufreq', 'sqm'):
+            init = root / 'etc/init.d' / service
+            init.write_text('#!/bin/sh\necho called >> "$SERVICE_LOG"\n')
+            init.chmod(0o755)
         # Rewrite absolute paths solely in the test copy; never touch host /etc.
         test = source.replace('/lib/functions.sh', str(root / 'lib/functions.sh'))
         test = test.replace('/etc/', str(root / 'etc') + '/')
@@ -37,9 +42,15 @@ config_foreach() {
         script = root / 'test.sh'
         script.write_text(test)
         env = dict(os.environ, PATH=str(root / 'bin') + ':' + os.environ['PATH'],
-                   UCI_LOG=str(root / 'uci.log'))
+                   UCI_LOG=str(root / 'uci.log'), SERVICE_LOG=str(root / 'service.log'))
         subprocess.run(['sh', str(script)], env=env, check=True)
         log = (root / 'uci.log').read_text()
+        assert not (root / 'service.log').exists(), 'First boot must not enable/disable services'
+        blocked_keys = ('openclash.config.enable', 'nikki-rs.config.enabled',
+                        'nikki-rs.config.boot_start', 'passwall2.@global[0].enabled',
+                        'daed.config.enabled')
+        for command in log.splitlines():
+            assert not any(command.startswith('set ' + key + '=') for key in blocked_keys), command
         for iface in ('default_radio0', 'default_radio1'):
             assert f'wireless.{iface}.ssid=sakura' in log
             assert f'wireless.{iface}.encryption=none' in log
