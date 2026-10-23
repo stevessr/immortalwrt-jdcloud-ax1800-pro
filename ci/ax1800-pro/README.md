@@ -25,14 +25,15 @@ Do not restore all of QWRT's network/firewall configuration onto this image.
 
 ## Defaults and credentials
 
-Both radios use SSID `sakura`, SAE-only WPA3-Personal and required PMF.
-An external root-only `/etc/sakura/sae-password` is used rather than the
-WPA2 PSK field, which requires a different password-length validation.
-No Wi-Fi/admin password is present in source, Actions secrets, logs or images.
-Wi-Fi stays disabled until a nonempty local provisioning file is installed.
-Short SAE passwords may still be rejected by some client UIs; association
-must be verified on the actual clients. The public image has normal OpenWrt
-admin defaults: provision the router's existing root hash locally before use.
+Both radios broadcast SSID `sakura` as **open, unencrypted Wi-Fi** on first
+boot. No password or SAE provisioning file is required; the defaults explicitly
+remove legacy WPA3/PSK settings and enable both radios. A leftover
+`/etc/sakura/sae-password` file from an older image is ignored.
+Anyone in range can connect and potentially access the bridged LAN and router
+management services. Wi-Fi traffic is not protected by link-layer encryption.
+Set a strong router admin password and enable WPA2/WPA3 before using this image
+on an untrusted network. The public image contains no admin credentials; the
+usual OpenWrt initial admin state still applies.
 Root's login shell is fish. `/bin/sh` stays ash for system scripts. Use
 `ssh root@router 'sh -c ...'` for POSIX shell automation after migration.
 

@@ -26,23 +26,20 @@ uci -q set daed.config.enabled='0'
 for package in openclash nikki-rs passwall2 daed; do uci -q commit "$package"; done
 
 configure_ap() {
-	local section="$1" mode
+	local section="$1" mode option
 	config_get mode "$section" mode
 	[ "$mode" = ap ] || return 0
+	# An open AP must not inherit WPA3/PSK options from earlier defaults.
 	uci set "wireless.$section.ssid=sakura"
-	uci set "wireless.$section.encryption=sae"
-	uci set "wireless.$section.ieee80211w=2"
-	uci set "wireless.$section.sae_pwe=2"
+	uci set "wireless.$section.encryption=none"
 	uci set "wireless.$section.wps_pushbutton=0"
-	uci -q delete "wireless.$section.key"
-	uci set "wireless.$section.sae_password_file=/etc/sakura/sae-password"
-	# Empty/missing provisioning must never create an open AP.
-	uci set "wireless.$section.disabled=1"
-	[ ! -s /etc/sakura/sae-password ] || uci set "wireless.$section.disabled=0"
+	for option in key sae_password_file sae_pwe ieee80211w wpa_psk_file; do
+		uci -q delete "wireless.$section.$option"
+	done
+	uci set "wireless.$section.disabled=0"
 }
 configure_radio() {
-	uci set "wireless.$1.disabled=1"
-	[ ! -s /etc/sakura/sae-password ] || uci set "wireless.$1.disabled=0"
+	uci set "wireless.$1.disabled=0"
 }
 if [ -f /etc/config/wireless ]; then
 	config_load wireless
@@ -50,5 +47,4 @@ if [ -f /etc/config/wireless ]; then
 	config_foreach configure_radio wifi-device
 	uci commit wireless
 fi
-[ ! -e /etc/sakura/sae-password ] || chmod 600 /etc/sakura/sae-password
 exit 0

@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 
 source = Path('package/custom/ax1800-pro-defaults/files/99-zz-ax1800-pro').read_text()
-for provisioned in (False, True):
+for legacy_sae_file in (False, True):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         for d in ('etc/config', 'etc/sakura', 'usr/bin', 'lib', 'bin'):
@@ -40,12 +40,17 @@ config_foreach() {
         log = (root / 'uci.log').read_text()
         for iface in ('default_radio0', 'default_radio1'):
             assert f'wireless.{iface}.ssid=sakura' in log
-            assert f'wireless.{iface}.encryption=sae' in log
-            assert f'wireless.{iface}.ieee80211w=2' in log
-            assert f'delete wireless.{iface}.key' in log
-            assert (f'wireless.{iface}.disabled=0' in log) == provisioned
-        assert 'encryption=none' not in log
+            assert f'wireless.{iface}.encryption=none' in log
+            assert f'wireless.{iface}.wps_pushbutton=0' in log
+            assert f'wireless.{iface}.disabled=0' in log
+            for old_option in ('key', 'sae_password_file', 'sae_pwe', 'ieee80211w', 'wpa_psk_file'):
+                assert f'delete wireless.{iface}.{old_option}' in log
+        for radio in ('radio0', 'radio1'):
+            assert f'wireless.{radio}.disabled=0' in log
+        assert 'encryption=sae' not in log
+        assert 'sae_password_file=' not in log
+        assert 'disabled=1' not in log
         assert str(root / 'usr/bin/fish') in (root / 'etc/passwd').read_text()
-        if provisioned:
-            assert (root / 'etc/sakura/sae-password').stat().st_mode & 0o777 == 0o600
-print('PASS: provisioned SAE-only and unprovisioned disabled-AP defaults; fish login')
+        if legacy_sae_file:
+            assert (root / 'etc/sakura/sae-password').read_text() == 'legacy-password\\n'
+print('PASS: open AP defaults on both radios, legacy SAE file ignored; fish login')
