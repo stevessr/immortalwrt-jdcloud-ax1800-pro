@@ -1,0 +1,21 @@
+From: AX1800 Pro compatibility fixes <noreply@example.invalid>
+Subject: [PATCH] nikki-rs: supply safe TLS verify default for Hysteria2
+
+clash-rs v0.20.0-alpha declares OutboundHysteria2.skip_cert_verify
+as a required bool. Many Mihomo subscriptions omit the field.
+Normalize the assembled run profile rather than the subscription so
+refreshes and manually added nodes receive the same fix.
+Preserve existing true/false values and continue verifying certificates
+when omitted.
+
+--- a/nikki-rs/files/nikki-rs.init
++++ b/nikki-rs/files/nikki-rs.init
+@@ -120,6 +120,9 @@ mixin_profile() (
+ 		fi
+ 	fi
++	# clash-rs v0.20.0-alpha requires skip-cert-verify for Hysteria2.
++	# Missing means verify certificates; do not change explicit true/false.
++	yq -M -i '(.proxies[] | select(.type == "hysteria2" and .["skip-cert-verify"] == null))["skip-cert-verify"] = false' "$RUN_PROFILE_PATH" 2>> "$APP_LOG_PATH" || exit 1
+ 	mv -f "$RUN_PROFILE_PATH" "$mixin_target" || exit 1
+ )
+ 
