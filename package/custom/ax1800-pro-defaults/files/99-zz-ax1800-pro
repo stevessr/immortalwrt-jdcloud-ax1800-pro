@@ -14,16 +14,8 @@ uci set firewall.@defaults[0].flow_offloading_hw='0'
 uci commit system
 uci commit firewall
 
-# Independent proxy stacks are installed, not simultaneously activated.
-for service in openclash nikki-rs passwall2 daed mentohust zerotier cloudflared kcpufreq sqm; do
-	[ ! -x "/etc/init.d/$service" ] || "/etc/init.d/$service" disable
-done
-uci -q set openclash.config.enable='0'
-uci -q set nikki-rs.config.enabled='0'
-uci -q set nikki-rs.config.boot_start='0'
-uci -q set passwall2.@global[0].enabled='0'
-uci -q set daed.config.enabled='0'
-for package in openclash nikki-rs passwall2 daed; do uci -q commit "$package"; done
+# Leave third-party service UCI flags and init autostart links untouched.
+# Their packaged defaults and user choices control whether they run.
 
 configure_ap() {
 	local section="$1" mode option
