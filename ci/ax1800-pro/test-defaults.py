@@ -27,8 +27,8 @@ config_foreach() {
 ''')
         (root / 'bin/uci').write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$UCI_LOG"\n')
         (root / 'bin/uci').chmod(0o755)
-        if provisioned:
-            (root / 'etc/sakura/sae-password').write_text('abcde\n')
+        if legacy_sae_file:
+            (root / 'etc/sakura/sae-password').write_text('legacy-password\n')
         # Rewrite absolute paths solely in the test copy; never touch host /etc.
         test = source.replace('/lib/functions.sh', str(root / 'lib/functions.sh'))
         test = test.replace('/etc/', str(root / 'etc') + '/')
@@ -52,5 +52,5 @@ config_foreach() {
         assert 'disabled=1' not in log
         assert str(root / 'usr/bin/fish') in (root / 'etc/passwd').read_text()
         if legacy_sae_file:
-            assert (root / 'etc/sakura/sae-password').read_text() == 'legacy-password\\n'
+            assert (root / 'etc/sakura/sae-password').read_text() == 'legacy-password\n'
 print('PASS: open AP defaults on both radios, legacy SAE file ignored; fish login')
