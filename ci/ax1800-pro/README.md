@@ -106,6 +106,16 @@ artifacts are verified. GWRT is pinned at
 Valid UTF-8 MentoHUST server messages pass through; other server text is
 converted from GBK to UTF-8 before printing and notification.
 
+The pinned Nikki-RS feed uses prebuilt clash-rs 0.20.0-alpha. Its Hysteria2
+configuration requires a `skip-cert-verify` boolean even when an upstream
+Mihomo subscription omits the field. The tracked nikki_rs feed patch adds
+`skip-cert-verify: false` only to Hysteria2 nodes missing that field, after
+Nikki-RS assembles its run profile. Explicit settings remain unchanged and
+TLS certificate verification remains enabled by default. The generated
+`/etc/nikki-rs/run/config.yaml` is overwritten on restart; existing
+devices need to install the same init-script normalization or correct the
+source subscription/profile rather than only editing the generated file.
+
 
 `kmod-qca-nss-drv-qdisc` links against the core driver's `nss_igs_*` exports,
 so `kmod-qca-nss-drv-igs` and `NSS_DRV_IGS_ENABLE` stay enabled in
