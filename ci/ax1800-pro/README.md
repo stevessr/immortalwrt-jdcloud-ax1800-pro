@@ -40,12 +40,42 @@ Root's login shell is fish. `/bin/sh` stays ash for system scripts. Use
 OpenClash includes the hash-verified official Mihomo arm64 core; Nikki-RS
 includes its pinned clash-rs package. Passwall2 uses nftables, not legacy
 iptables. Proxy applications, MentoHUST, ZeroTier, cloudflared, SQM, `bottom` and
-`btop` are installed but not automatically enabled or supplied with accounts/tunnels.
+`btop` are installed without accounts/tunnels. The first-boot defaults no
+longer force UCI enabled switches to zero or remove init autostart symlinks.
+Package defaults and later user choices are respected. Avoid running
+competing transparent proxy stacks simultaneously.
 GWRT is the default LuCI theme selected in Actions; `ubus`/`ubusd`, the
 Cloudflared LuCI app and LuCI File Manager are included. `daed` is included as
 requested; its upstream was archived in September 2026. The older kcpufreq UI
-is included with LuCI compatibility and left disabled; no unsupported CPU
+is included with LuCI compatibility; no unsupported CPU
 frequency is forced.
+
+## Recover an already-flashed image
+
+Previous builds ran a one-shot `99-zz-ax1800-pro` script which disabled
+init autostart for OpenClash, Nikki-RS, PassWall2, daed, MentoHUST,
+ZeroTier, cloudflared, kcpufreq and SQM, and set several proxy UCI switches
+to zero. Updating this source does not retroactively revert existing
+device settings. Restore only the services you want to use. For daed and
+MentoHUST, after filling in the required account/credential settings:
+
+```sh
+uci set daed.config.enabled='1'
+uci set mentohust.config.enable='1'
+uci commit daed
+uci commit mentohust
+/etc/init.d/daed enable
+/etc/init.d/mentohust enable
+# If not already running, start each wanted service:
+/etc/init.d/daed start
+/etc/init.d/mentohust start
+```
+
+The `/etc/uci-defaults/` script is normally removed after successful first
+boot; do not run it manually. Enabling startup alone does not start a service
+immediately, and changing a UCI switch alone does not guarantee a running
+process. Check `/etc/init.d/<name> status` and `ubus call service list`
+on the actual device. Never blindly enable every transparent proxy.
 
 ## NSS versus traffic inspection
 
